@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import urlRoutes from "./routes/url.js";
 import { redirectShortUrl } from "./controllers/url.js";
+import authRoutes from "./routes/auth.js";
+import { registerUser } from "./controllers/auth.js";
 
 const app = express();
 
@@ -15,6 +17,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/urls", urlRoutes);
+app.use('/api/auth', authRoutes);
 app.get("/:shortCode", redirectShortUrl);
 
 export default app;

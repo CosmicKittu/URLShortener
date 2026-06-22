@@ -1,6 +1,6 @@
 import Url from "../model/url.js";
 import generateShortCode from "../utils/generateShortCode.js";
-
+import { redisClient } from "../config/redis.js";
 export const createShortUrl = async (req, res) => {
   try {
     const { originalUrl, customAlias, withUsername = false } = req.body;
@@ -29,6 +29,7 @@ export const createShortUrl = async (req, res) => {
       shortCode,
       isCustom,
       withUsername,
+      createdBy: req.user.userID,
     });
 
     const baseUrl = process.env.BASE_URL || "http://localhost:5000";
@@ -46,6 +47,7 @@ export const createShortUrl = async (req, res) => {
         shortUrl,
         isCustom: url.isCustom,
         withUsername: url.withUsername,
+        createdBy: url.createdBy,
       },
     });
   } catch (error) {
@@ -62,6 +64,17 @@ export const redirectShortUrl = async (req, res) => {
   try {
     const { shortCode } = req.params;
 
+    const cachedUrl = await redisClient.get(`url:${shortCode}`);
+
+
+    if (cachedUrl) {
+
+      console.log(`from redis ${cachedUrl}`)
+      return res.redirect(cachedUrl);
+    }
+    const now1 = new Date();
+
+
     const url = await Url.findOne({ shortCode });
 
     if (!url) {
@@ -70,6 +83,7 @@ export const redirectShortUrl = async (req, res) => {
         message: "Short URL not found",
       });
     }
+    await redisClient.setEx(`url:${shortCode}`, 3600, url.originalUrl);
 
     if (url.expiresAt && url.expiresAt < new Date()) {
       return res.status(410).json({
@@ -122,6 +136,28 @@ export const getUrlStats = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to get URL stats",
+      error: error.message,
+    });
+  }
+};
+
+
+
+export const getMyUrls = async (req, res) => {
+  try {
+    const urls = await Url.find({ createdBy: req.user.userID }).sort({
+      createdAt: -1,
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: urls.length,
+      data: urls,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to get user URLs",
       error: error.message,
     });
   }
