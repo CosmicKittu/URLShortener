@@ -68,6 +68,7 @@ export const redirectShortUrl = async (req, res) => {
 
 
     if (cachedUrl) {
+      await redisClient.incr(`clicks:${shortCode}`);
 
       console.log(`from redis ${cachedUrl}`)
       return res.redirect(cachedUrl);
@@ -84,6 +85,7 @@ export const redirectShortUrl = async (req, res) => {
       });
     }
     await redisClient.setEx(`url:${shortCode}`, 3600, url.originalUrl);
+    await redisClient.incr(`clicks:${shortCode}`);
 
     if (url.expiresAt && url.expiresAt < new Date()) {
       return res.status(410).json({
@@ -92,8 +94,8 @@ export const redirectShortUrl = async (req, res) => {
       });
     }
 
-    url.clicks += 1;
-    await url.save();
+    // url.clicks += 1;
+    // await url.save();
 
     return res.redirect(url.originalUrl);
   } catch (error) {
@@ -118,13 +120,14 @@ export const getUrlStats = async (req, res) => {
         message: "Short URL not found",
       });
     }
+    const redisClicks = await redisClient.get(`clicks:${shortCode}`);
 
     return res.status(200).json({
       success: true,
       data: {
         originalUrl: url.originalUrl,
         shortCode: url.shortCode,
-        clicks: url.clicks,
+        clicks: url.clicks + Number(redisClicks || 0),
         isCustom: url.isCustom,
         withUsername: url.withUsername,
         expiresAt: url.expiresAt,
