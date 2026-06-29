@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
+import { API_URL } from "../config";
 
 export default function Register(){
     const [formdata, setFormdata] = useState({
@@ -16,7 +17,7 @@ export default function Register(){
     const handleSubmit = async (e) =>{
         e.preventDefault();
         const res = await axios.post(
-            "http://localhost:5000/api/auth/register",
+            `${API_URL}/api/auth/register`,
             formdata
         );
         console.log(res.data);

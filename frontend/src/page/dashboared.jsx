@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { API_URL } from "../config";
 
 export default function Dash(){
     // { originalUrl, customAlias, withUsername = false }
@@ -52,7 +53,7 @@ export default function Dash(){
 
         try {
             const res = await axios.post(
-                "http://localhost:5000/api/urls/shorten",
+                `${API_URL}/api/urls/shorten`,
                 data,
                 {
                     headers : {
